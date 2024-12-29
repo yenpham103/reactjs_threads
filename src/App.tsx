@@ -1,8 +1,14 @@
+import { Routes } from "react-router-dom";
+import { publicRoutes } from "./routes/publicRoutes";
+import { privateRoutes } from "./routes/privateRoutes";
+import { coreRoutes } from "./core/routes";
 
 export default function App() {
   return (
-    <div>
-      <h1>Hello World</h1>
-    </div>
+    <Routes>
+      {publicRoutes}
+      {privateRoutes}
+      {coreRoutes}
+    </Routes>
   )
 }
