@@ -1,26 +1,39 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { FaFacebookSquare } from "react-icons/fa"
 import { FaGoogle } from "react-icons/fa"
-import { useToast } from "@/hooks/use-toast"
 import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react"
+import { client } from "@/utils/client"
+import { saveLocalRefreshToken, saveLocalToken } from "@/utils/auth"
+import { useToastAlert } from "@/hooks/toast"
+import { useDispatch } from "react-redux"
+import { updateAuthStatus } from "@/stores/slices/authSlice"
 
 export default function Login() {
-  const { toast } = useToast()
+  const  toast  = useToastAlert()
   const [isLoading, setIsLoading] = useState(true)
+  const navigate = useNavigate()
   const { register, handleSubmit, trigger, formState: { errors } } = useForm({
     mode: "onChange",
   });
-  const onSubmit = (data) => {
-    console.log(data);
-    toast({
-      title: "Account created.",
-      variant: "destructive",
-      className: "fixed bottom-5 z-50 max-h-screen w-full flex-col-reverse p-4 sm:left-[50%] sm:translate-x-[-50%] sm:flex-col md:max-w-[420px] bg-black text-white rounded-md border-black",
-    })
+  const dispatch = useDispatch()
+  const onSubmit = async (formData: unknown) => {
+    const { username: email, password } = formData as { username: string, password: string }
+
+    try {
+      const { data } = await client.post("/auth/login", { email, password })
+      saveLocalToken(data.access_token)
+      saveLocalRefreshToken(data.refresh_token)
+      dispatch(updateAuthStatus(true))
+      navigate("/")
+
+    } catch {
+      toast("Invalid username or password")
+    }
+
   };
 
   useEffect(() => {
