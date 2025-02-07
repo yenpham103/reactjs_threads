@@ -6,32 +6,37 @@ import { FaFacebookSquare } from "react-icons/fa"
 import { FaGoogle } from "react-icons/fa"
 import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react"
-import { client } from "@/utils/client"
 import { saveLocalRefreshToken, saveLocalToken } from "@/utils/auth"
 import { useToastAlert } from "@/hooks/toast"
-import { useDispatch } from "react-redux"
-import { updateAuthStatus } from "@/stores/slices/authSlice"
+import { MESSAGES } from "@/constants/message"
+import { requestLogin } from "@/services/authService"
+import { RouteNames } from "@/constants/route"
+const TIMEOUT = 1000
 
 export default function Login() {
-  const  toast  = useToastAlert()
+  const toast = useToastAlert()
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
   const { register, handleSubmit, trigger, formState: { errors } } = useForm({
     mode: "onChange",
   });
-  const dispatch = useDispatch()
   const onSubmit = async (formData: unknown) => {
     const { username: email, password } = formData as { username: string, password: string }
 
     try {
-      const { data } = await client.post("/auth/login", { email, password })
+      setIsLoading(true)
+      const data = await requestLogin({ email, password })
       saveLocalToken(data.access_token)
       saveLocalRefreshToken(data.refresh_token)
-      dispatch(updateAuthStatus(true))
-      navigate("/")
+      setTimeout(() => {
+        navigate("/")
+      }, TIMEOUT)
+      toast(MESSAGES.auth.authenticated)
 
     } catch {
-      toast("Invalid username or password")
+      toast(MESSAGES.auth.unauthenticated)
+    } finally {
+      setIsLoading(false)
     }
 
   };
@@ -41,7 +46,6 @@ export default function Login() {
     setIsLoading(false)
   }, [])
 
-  console.log(errors);
 
   return (
     <div>
@@ -50,13 +54,13 @@ export default function Login() {
         <Input type="text" placeholder="Username, phone or email" className="mb-5 bg-[rgb(245, 245, 245)] py-6" {...register("username", {
           required: {
             value: true,
-            message: "Username is required"
+            message: MESSAGES.auth.username
           }
         })} />
         <Input type="password" placeholder="Password" className="mb-5 bg-[rgb(245, 245, 245)] py-6" {...register("password", {
           required: {
             value: true,
-            message: "Password is required"
+            message: MESSAGES.auth.password
           }
         })} />
         <Button size={null} className="w-full py-4 disabled:opacity-100 disabled:text-gray-400" type="submit" disabled={isLoading || !!errors.username || !!errors.password} >Đăng nhập</Button>
@@ -75,7 +79,7 @@ export default function Login() {
       </div>
       <div className="flex justify-center mt-5 gap-4">
         <span>Have not an account ?</span>
-        <Link to="/register" className="text-[#999]">Register</Link>
+        <Link to={RouteNames.AUTH_REGISTER} className="text-[#999]">Register</Link>
       </div>
     </div>
   )
